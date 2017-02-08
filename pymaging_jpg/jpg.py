@@ -33,14 +33,21 @@ import array
 
 PIXELSIZE = 3
 
-def decode(fileobj):
+def open_image(fileobj):
     decoder = TonyJpegDecoder()
     jpegsrc = fileobj.read()
     try:
-        bmpout = decoder.decode(jpegsrc)
+        decoder.read_headers(jpegsrc)
     except:
         fileobj.seek(0)
         return None
+    fileobj.seek(0)
+    return Image(RGB, decoder.Width, decoder.Height, lambda: read_pixels(fileobj))
+
+
+def read_pixels(fileobj):
+    decoder = TonyJpegDecoder()
+    bmpout = decoder.decode(fileobj.read())
     pixels = array.array('B')
     row_width = decoder.Width * PIXELSIZE
     # rows are bottom to top
@@ -52,9 +59,9 @@ def decode(fileobj):
         #del bmpout[:3 * decoder.Width]
         #del bmpout[:2] # kill padding
     pixel_array = get_pixel_array(pixels, decoder.Width, decoder.Height, PIXELSIZE)
-    return Image(pixel_array, RGB)
+    return pixel_array, None
 
-def encode(image, fileobj):
+def save_image(image, fileobj):
     raise FormatNotSupported('jpeg')
 
-JPG = Format(decode, encode, ['jpg', 'jpeg'])
+JPG = Format(open_image, save_image, ['jpg', 'jpeg'])
